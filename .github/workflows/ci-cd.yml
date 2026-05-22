@@ -33,6 +33,9 @@ jobs:
         curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -n
         export PATH="$HOME/yandex-cloud/bin:$PATH"
 
+        CLEAN_SG_ID=$(echo "$YC_SECURITY_GROUP_ID" | tr -d '\r' | tr -d '\n' | tr -d ' ')
+
+
         RUNNER_PUBLIC_IP=$(curl -s https://ifconfig.me)
         echo "IP-адрес раннера деплоя: $RUNNER_PUBLIC_IP"
 
@@ -40,10 +43,10 @@ jobs:
         yc config set token "$YC_TOKEN"
 
         echo "=== Открываем доступ для IP $RUNNER_PUBLIC_IP в Security Group ==="
-        yc vpc security-group update-rules "$YC_SECURITY_GROUP_ID" \
+        yc vpc security-group update-rules "$CLEAN_SG_ID" \
           --add-rule "direction=ingress,protocol=tcp,port=443,v4-cidrs=${RUNNER_PUBLIC_IP}/32,description=github-actions-temp-access"
 
-        trap 'echo "=== Закрываем доступ: удаляем временное правило ==="; yc vpc security-group update-rules "$YC_SECURITY_GROUP_ID" --remove-rule-id=$(yc vpc security-group get "$YC_SECURITY_GROUP_ID" --format=json | jq -r ".rules[] | select(.description==\"github-actions-temp-access\") | .id" 2>/dev/null || echo "")' EXIT
+        trap 'echo "=== Закрываем доступ: удаляем временное правило ==="; yc vpc security-group update-rules "$CLEAN_SG_ID" --delete-rule-id=$(yc vpc security-group get "$CLEAN_SG_ID" --format=json | jq -r ".rules[] | select(.description==\"github-actions-temp-access\") | .id" 2>/dev/null || echo "")' EXIT
 
         yc managed-kubernetes cluster get-credentials --id "$YC_CLUSTER_ID" --external --force --kubeconfig "$HOME/.kube/config"
 
