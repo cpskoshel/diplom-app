@@ -31,12 +31,21 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/v')
       env:
         YC_TOKEN: ${{ secrets.YC_TOKEN }}
-        YC_CLUSTER_ID: ${{ secrets.YC_CLUSTER_ID }} # Добавьте ID кластера в секреты GitHub
+        YC_CLUSTER_ID: ${{ secrets.YC_CLUSTER_ID }}
+        YC_SECURITY_GROUP_ID: ${{ secrets.YC_SECURITY_GROUP_ID }} 
       run: |
         RUNNER_PUBLIC_IP=$(curl -s https://ifconfig.me)
-        echo "IP-адрес раннера деплоя: $RUNNER_PUBLIC_IP"
+
         mkdir -p ~/.kube
-        yc managed-kubernetes cluster get-credentials --id "$YC_CLUSTER_ID" --external --force --token "$YC_TOKEN" --kubeconfig "$HOME/.kube/config"
+        yc config set token "$YC_TOKEN"
+
+        echo "=== Открываем доступ для IP $RUNNER_PUBLIC_IP in Security Group ==="
+        yc vpc security-group add-rules "$YC_SECURITY_GROUP_ID" \
+          --rule "direction=ingress,protocol=tcp,port=443,v4-cidrs=${RUNNER_PUBLIC_IP}/32,description=Temporary GitHub Actions application runner access"
+
+        trap 'echo "=== Закрываем доступ: удаляем временное правило ==="; yc vpc security-group remove-rules "$YC_SECURITY_GROUP_ID" --rule "direction=ingress,protocol=tcp,port=443,v4-cidrs=${RUNNER_PUBLIC_IP}/32"' EXIT
+
+        yc managed-kubernetes cluster get-credentials --id "$YC_CLUSTER_ID" --external --force --kubeconfig "$HOME/.kube/config"
 
         REF_NAME="${GITHUB_REF#refs/tags/}"
         CLEAN_REG_ID=$(echo "${{ secrets.YC_REGISTRY_ID }}" | tr -d '\r' | tr -d '\n' | tr -d ' ')
