@@ -35,11 +35,12 @@ jobs:
         YC_SECURITY_GROUP_ID: ${{ secrets.YC_SECURITY_GROUP_ID }} 
       run: |
         RUNNER_PUBLIC_IP=$(curl -s https://ifconfig.me)
+        echo "IP-адрес раннера деплоя: $RUNNER_PUBLIC_IP"
 
         mkdir -p ~/.kube
         yc config set token "$YC_TOKEN"
 
-        echo "=== Открываем доступ для IP $RUNNER_PUBLIC_IP in Security Group ==="
+        echo "=== Открываем доступ для IP $RUNNER_PUBLIC_IP в Security Group ==="
         yc vpc security-group add-rules "$YC_SECURITY_GROUP_ID" \
           --rule "direction=ingress,protocol=tcp,port=443,v4-cidrs=${RUNNER_PUBLIC_IP}/32,description=Temporary GitHub Actions application runner access"
 
