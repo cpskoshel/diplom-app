@@ -33,19 +33,11 @@ jobs:
         curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -n
         export PATH="$HOME/yandex-cloud/bin:$PATH"
 
-        CLEAN_SG_ID="enptdv68dlmjkj0nr0mc"
-
-
         RUNNER_PUBLIC_IP=$(curl -s https://ifconfig.me)
         echo "IP-адрес раннера деплоя: $RUNNER_PUBLIC_IP"
 
         mkdir -p ~/.kube
         yc config set token "$YC_TOKEN"
-
-        echo "=== Открываем доступ для IP $RUNNER_PUBLIC_IP в Security Group ==="
-        yc vpc security-group update-rules enptdv68dlmjkj0nr0mc --add-rule "direction=ingress,protocol=tcp,port=443,v4-cidrs=${RUNNER_PUBLIC_IP}/32,description=github-actions-temp-access"
-
-        trap 'echo "=== Закрываем доступ: удаляем временное правило ==="; RULE_ID=$(yc vpc security-group get enptdv68dlmjkj0nr0mc --format=json 2>/dev/null | jq -r ".rules[]? | select(.description==\"github-actions-temp-access\") | .id" | head -n 1); if [ ! -z "$RULE_ID" ]; then yc vpc security-group update-rules enptdv68dlmjkj0nr0mc --delete-rule-id="$RULE_ID"; fi' EXIT
 
         yc managed-kubernetes cluster get-credentials --id "$YC_CLUSTER_ID" --external --force --kubeconfig "$HOME/.kube/config"
 
