@@ -37,15 +37,15 @@ jobs:
         echo "IP-адрес раннера деплоя: $RUNNER_PUBLIC_IP"
 
         mkdir -p ~/.kube
-        yc config set token "$YC_TOKEN"
+        /usr/local/bin/yc config set token "$YC_TOKEN"
 
         echo "=== Открываем доступ для IP $RUNNER_PUBLIC_IP в Security Group ==="
-        yc vpc security-group add-rules "$YC_SECURITY_GROUP_ID" \
+        /usr/local/bin/yc vpc security-group add-rules "$YC_SECURITY_GROUP_ID" \
           --rule "direction=ingress,protocol=tcp,port=443,v4-cidrs=${RUNNER_PUBLIC_IP}/32,description=Temporary GitHub Actions application runner access"
 
-        trap 'echo "=== Закрываем доступ: удаляем временное правило ==="; yc vpc security-group remove-rules "$YC_SECURITY_GROUP_ID" --rule "direction=ingress,protocol=tcp,port=443,v4-cidrs=${RUNNER_PUBLIC_IP}/32"' EXIT
+        trap 'echo "=== Закрываем доступ: удаляем временное правило ==="; /usr/local/bin/yc vpc security-group remove-rules "$YC_SECURITY_GROUP_ID" --rule "direction=ingress,protocol=tcp,port=443,v4-cidrs=${RUNNER_PUBLIC_IP}/32"' EXIT
 
-        yc managed-kubernetes cluster get-credentials --id "$YC_CLUSTER_ID" --external --force --kubeconfig "$HOME/.kube/config"
+        /usr/local/bin/yc managed-kubernetes cluster get-credentials --id "$YC_CLUSTER_ID" --external --force --kubeconfig "$HOME/.kube/config"
 
         REF_NAME="${GITHUB_REF#refs/tags/}"
         CLEAN_REG_ID=$(echo "${{ secrets.YC_REGISTRY_ID }}" | tr -d '\r' | tr -d '\n' | tr -d ' ')
