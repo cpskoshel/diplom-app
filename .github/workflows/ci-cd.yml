@@ -1,4 +1,4 @@
-name: CI/CD diplom-app
+name: CI/CD diplom-ap¸¸¸¸
 
 on:
   push:
@@ -26,28 +26,21 @@ jobs:
     - name: Deploy to Kubernetes Cluster
       if: startsWith(github.ref, 'refs/tags/v')
       env:
-        YC_TOKEN: ${{ secrets.YC_TOKEN }}
-        YC_CLUSTER_ID: ${{ secrets.YC_CLUSTER_ID }}
-        YC_SECURITY_GROUP_ID: ${{ secrets.YC_SECURITY_GROUP_ID }}
+        K8S_SERVER: "https://${{ secrets.K8S_SERVER }}" 
+        K8S_TOKEN: ${{ secrets.K8S_TOKEN }}
       run: |
-        curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -n
-        export PATH="$HOME/yandex-cloud/bin:$PATH"
-
-        RUNNER_PUBLIC_IP=$(curl -s https://ifconfig.me)
-        echo "IP-адрес раннера деплоя: $RUNNER_PUBLIC_IP"
-
-        mkdir -p ~/.kube
-        yc config set token "$YC_TOKEN"
-
-        yc managed-kubernetes cluster get-credentials --id "$YC_CLUSTER_ID" --external --force --kubeconfig "$HOME/.kube/config"
+        kubectl config set-cluster yc-cluster --server="$K8S_SERVER" --insecure-skip-tls-verify=true
+        kubectl config set-credentials github-actions --token="$K8S_TOKEN"
+        kubectl config set-context yc-context --cluster=yc-cluster --user=github-actions --namespace=default
+        kubectl config use-context yc-context
 
         REF_NAME="${GITHUB_REF#refs/tags/}"
-        CLEAN_REG_ID=$(echo "${{ secrets.YC_REGISTRY_ID }}" | tr -d '\r' | tr -d '\n' | tr -d ' ')
+        CLEAN_REG_ID="${{ secrets.YC_REGISTRY_ID }}"
         
-        echo "=== Применяем патч к деплойменту в Kubernetes ==="
         kubectl patch deployment diplom-app \
           --namespace=default \
           --type='json' \
           -p="[{\"op\": \"replace\", \"path\": \"/spec/template/spec/containers/0/image\", \"value\": \"cr.yandex/${CLEAN_REG_ID}/diplom-app:${REF_NAME}\"}]"
 
         kubectl rollout restart deployment/diplom-app --namespace=default
+        
