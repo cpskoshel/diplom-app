@@ -1,4 +1,4 @@
-name: CI/CD diplom-ap¸¸¸¸
+name: CI/CD diplom-app
 
 on:
   push:
@@ -13,6 +13,10 @@ jobs:
     - name: Checkout Application Code
       uses: actions/checkout@v4
 
+    - name: Install Yandex Cloud CLI
+      run: |
+        curl -sSL https://yandexcloud.net | bash -s -- -i /usr/local/yandex-cloud -b /usr/local/bin -n
+
     - name: Log in to Yandex Container Registry
       run: echo "${{ secrets.YC_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
     
@@ -26,16 +30,16 @@ jobs:
     - name: Deploy to Kubernetes Cluster
       if: startsWith(github.ref, 'refs/tags/v')
       env:
-        K8S_SERVER: "https://${{ secrets.K8S_SERVER }}" 
-        K8S_TOKEN: ${{ secrets.K8S_TOKEN }}
+        YC_TOKEN: ${{ secrets.YC_TOKEN }}
+        YC_CLUSTER_ID: ${{ secrets.YC_CLUSTER_ID }} # Добавьте ID кластера в секреты GitHub
       run: |
-        kubectl config set-cluster yc-cluster --server="$K8S_SERVER" --insecure-skip-tls-verify=true
-        kubectl config set-credentials github-actions --token="$K8S_TOKEN"
-        kubectl config set-context yc-context --cluster=yc-cluster --user=github-actions --namespace=default
-        kubectl config use-context yc-context
+        RUNNER_PUBLIC_IP=$(curl -s https://ifconfig.me)
+        echo "IP-адрес раннера деплоя: $RUNNER_PUBLIC_IP"
+        mkdir -p ~/.kube
+        yc managed-kubernetes cluster get-credentials --id "$YC_CLUSTER_ID" --external --force --token "$YC_TOKEN" --kubeconfig "$HOME/.kube/config"
 
         REF_NAME="${GITHUB_REF#refs/tags/}"
-        CLEAN_REG_ID="${{ secrets.YC_REGISTRY_ID }}"
+        CLEAN_REG_ID=$(echo "${{ secrets.YC_REGISTRY_ID }}" | tr -d '\r' | tr -d '\n' | tr -d ' ')
         
         kubectl patch deployment diplom-app \
           --namespace=default \
@@ -43,4 +47,3 @@ jobs:
           -p="[{\"op\": \"replace\", \"path\": \"/spec/template/spec/containers/0/image\", \"value\": \"cr.yandex/${CLEAN_REG_ID}/diplom-app:${REF_NAME}\"}]"
 
         kubectl rollout restart deployment/diplom-app --namespace=default
-        
