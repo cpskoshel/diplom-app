@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOPS_NIK</title>
+    <!-- Подключение шрифта Marvel-стиля -->
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        :root {
+            --marvel-red: #E23636;
+            --marvel-dark: #151515;
+            --marvel-gold: #F78F3F;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--marvel-dark);
+            color: #FFFFFF;
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(226, 54, 54, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(247, 143, 63, 0.1) 0%, transparent 40%);
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(20, 20, 20, 0.8);
+            padding: 40px 60px;
+            border-radius: 4px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        /* Эффект светящихся углов в стиле интерфейсов Тони Старка */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border: 2px solid transparent;
+            border-image: linear-gradient(135deg, var(--marvel-red), var(--marvel-gold)) 1;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 4rem;
+            letter-spacing: 2px;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            background: #FFFFFF;
+            color: var(--marvel-dark);
+            padding: 5px 20px;
+            display: inline-block;
+            transform: skewX(-10deg);
+            box-shadow: 7px 7px 0px var(--marvel-red);
+        }
+
+        .meta-info {
+            margin-top: 30px;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 20px;
+        }
+
+        .author {
+            color: #FFFFFF;
+            font-weight: 700;
+        }
+
+        .course {
+            color: var(--marvel-gold);
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        /* Стили виджета времени (в стиле HUD Тони Старка / Джарвиса) */
+        .clock-container {
+            margin-top: 35px;
+        }
+
+        .clock-label {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.5rem;
+            color: var(--marvel-red);
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        #clock {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 5.5rem;
+            color: #FFFFFF;
+            letter-spacing: 4px;
+            margin: 0;
+            text-shadow: 0 0 20px rgba(226, 54, 54, 0.6);
+            animation: pulse 2s infinite alternate;
+        }
+
+        #date {
+            font-size: 1rem;
+            color: #888888;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        @keyframes pulse {
+            0% { text-shadow: 0 0 10px rgba(226, 54, 54, 0.5); }
+            100% { text-shadow: 0 0 25px rgba(226, 54, 54, 0.9), 0 0 10px rgba(247, 143, 63, 0.5); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Дипломное приложение</h1>
+        
+        <div class="meta-info">
+            <div class="author">Автор: Кошель Н.П.</div>
+            <div class="course">Курс: DevOps-инженер</div>
+        </div>
+
+        <div class="clock-container">
+            <div class="clock-label">Системное время // СШИ Т.А.Р.К.</div>
+            <div id="clock">00:00:00</div>
+            <div id="date">ЗАГРУЗКА...</div>
+        </div>
+    </div>
+
+    <script>
+        function updateClock() {
+            const now = new Date();
+            
+            // Форматирование времени
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+            
+            // Форматирование даты
+            const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+            const dateString = now.toLocaleDateString('ru-RU', options);
+            document.getElementById('date').textContent = dateString.toUpperCase();
+        }
+
+        // Обновление каждую секунду
+        setInterval(updateClock, 1000);
+        // Первый запуск сразу
+        updateClock();
+    </script>
+</body>
+</html>

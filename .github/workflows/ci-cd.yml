@@ -1,0 +1,46 @@
+name: CI/CD diplom-ap¸¸¸¸
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Application Code
+      uses: actions/checkout@v4
+
+    - name: Log in to Yandex Container Registry
+      run: echo "${{ secrets.YC_TOKEN }}" | docker login --username oauth --password-stdin cr.yandex
+    
+    - name: Build and Push Docker Image (Flat Syntax)
+      run: |
+        CLEAN_REGISTRY_ID=$(echo "${{ secrets.YC_REGISTRY_ID }}" | tr -d '\r' | tr -d '\n' | tr -d ' ')
+        REF_NAME=$(echo "${{ github.ref_name }}" | tr -d '\r' | tr -d '\n' | tr -d ' ')
+        
+        "/usr/bin/docker" buildx build --platform linux/amd64 --output type=image,push=true -t "cr.yandex/${CLEAN_REGISTRY_ID}/diplom-app:latest" -t "cr.yandex/${CLEAN_REGISTRY_ID}/diplom-app:${REF_NAME}" .
+
+    - name: Deploy to Kubernetes Cluster
+      if: startsWith(github.ref, 'refs/tags/v')
+      env:
+        K8S_SERVER: "https://${{ secrets.K8S_SERVER }}" 
+        K8S_TOKEN: ${{ secrets.K8S_TOKEN }}
+      run: |
+        kubectl config set-cluster yc-cluster --server="$K8S_SERVER" --insecure-skip-tls-verify=true
+        kubectl config set-credentials github-actions --token="$K8S_TOKEN"
+        kubectl config set-context yc-context --cluster=yc-cluster --user=github-actions --namespace=default
+        kubectl config use-context yc-context
+
+        REF_NAME="${GITHUB_REF#refs/tags/}"
+        CLEAN_REG_ID="${{ secrets.YC_REGISTRY_ID }}"
+        
+        kubectl patch deployment diplom-app \
+          --namespace=default \
+          --type='json' \
+          -p="[{\"op\": \"replace\", \"path\": \"/spec/template/spec/containers/0/image\", \"value\": \"cr.yandex/${CLEAN_REG_ID}/diplom-app:${REF_NAME}\"}]"
+
+        kubectl rollout restart deployment/diplom-app --namespace=default
+        
