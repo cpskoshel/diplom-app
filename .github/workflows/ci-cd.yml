@@ -33,7 +33,7 @@ jobs:
         curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -n
         export PATH="$HOME/yandex-cloud/bin:$PATH"
 
-        CLEAN_SG_ID=$(echo "$YC_SECURITY_GROUP_ID" | tr -d '\r' | tr -d '\n' | tr -d ' ')
+        CLEAN_SG_ID="enptdv68dlmjkj0nr0mc"
 
 
         RUNNER_PUBLIC_IP=$(curl -s https://ifconfig.me)
